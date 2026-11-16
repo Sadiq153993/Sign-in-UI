@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>blueflame — Dual-Panel Sliding Authentication</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Poppins -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            poppins: ['Poppins', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              dark: '#0c4c2d',
+              primary: '#116d42',
+              medium: '#167d4d',
+              light: '#1e925b',
+              mint: '#bfe3d5',
+              mintFocus: '#b2dcce',
+            },
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+    }
+
+    /* Mint Pill Input */
+    .pill-input {
+      background-color: #bfe3d5;
+      color: #124d34;
+      transition: all 0.25s ease;
+    }
+    .pill-input::placeholder {
+      color: #6a9c87;
+      letter-spacing: 0.05em;
+    }
+    .pill-input:focus {
+      outline: none;
+      background-color: #b2dcce;
+      box-shadow: 0 0 0 3px rgba(17, 109, 66, 0.22);
+    }
+
+    /* Top right corner decorative green curve */
+    .top-right-curve {
+      position: absolute;
+      top: -45px;
+      right: -45px;
+      width: 170px;
+      height: 170px;
+      border-radius: 50%;
+      background: #198453;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ==========================================================================
+       DUAL-PANEL SLIDING CONTAINER ARCHITECTURE
+       ========================================================================== */
+    .auth-container {
+      position: relative;
+      overflow: hidden;
+      width: 100%;
+      max-width: 900px;
+      height: 500px;
+      min-height: 480px;
+      background: #ffffff;
+      border-radius: 2.2rem;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+    }
+
+    /* Form Panels (positioned on the left half by default) */
+    .form-panel {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 1.5rem 2.5rem;
+      transition: all 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      box-sizing: border-box;
+    }
+
+    /* Sign In Panel */
+    .sign-in-panel {
+      left: 0;
+      z-index: 2;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* Sign Up Panel */
+    .sign-up-panel {
+      left: 0;
+      opacity: 0;
+      z-index: 1;
+      pointer-events: none;
+      transform: scale(0.96);
+    }
+
+    /* When right-panel-active is toggled (Sign Up Mode) */
+    .auth-container.right-panel-active .sign-in-panel {
+      transform: translateX(100%) scale(0.96);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .auth-container.right-panel-active .sign-up-panel {
+      transform: translateX(100%) scale(1);
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 5;
+    }
+
+    /* ==========================================================================
+       GREEN SLIDING OVERLAY CONTAINER
+       ========================================================================== */
+    .overlay-container {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 50%;
+      height: 100%;
+      overflow: hidden;
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 100;
+    }
+
+    .auth-container.right-panel-active .overlay-container {
+      transform: translateX(-100%);
+    }
+
+    /* The continuous wide green gradient inside overlay */
+    .overlay {
+      position: relative;
+      left: -100%;
+      height: 100%;
+      width: 200%;
+      background: radial-gradient(circle at 100% 50%, #1e925b 0%, #167a4b 45%, #0f5935 85%, #0c4c2d 100%);
+      color: #ffffff;
+      transform: translateX(0);
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+      overflow: hidden;
+    }
+
+    .overlay::before {
+      content: '';
+      position: absolute;
+      top: -20%;
+      right: -15%;
+      width: 520px;
+      height: 520px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.04);
+      pointer-events: none;
+    }
+    .overlay::after {
+      content: '';
+      position: absolute;
+      bottom: -20%;
+      left: -15%;
+      width: 540px;
+      height: 540px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .auth-container.right-panel-active .overlay {
+      transform: translateX(50%);
+    }
+
+    /* Overlay panels (Left & Right) */
+    .overlay-panel {
+      position: absolute !important;
+      top: 0;
+      height: 100%;
+      width: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem 2rem;
+      text-align: center;
+      box-sizing: border-box;
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Overlay Left (Shown in Sign Up mode) */
+    .overlay-left {
+      left: 0;
+      transform: translateX(-20%);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .auth-container.right-panel-active .overlay-left {
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    /* Overlay Right (Shown in Sign In mode - initial default state) */
+    .overlay-right {
+      right: 0;
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
+      z-index: 10;
+    }
+
+    .auth-container.right-panel-active .overlay-right {
+      transform: translateX(20%);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ==========================================================================
+       MOBILE RESPONSIVENESS (Screens < 768px)
+       Gracefully adapts to modern tabbed sliding panel
+       ========================================================================== */
+    @media (max-width: 767px) {
+      .auth-container {
+        min-height: auto;
+        border-radius: 2rem;
+      }
+      .overlay-container {
+        display: none;
+      }
+      .form-panel {
+        position: relative;
+        width: 100%;
+        left: 0 !important;
+        transform: none !important;
+        transition: opacity 0.35s ease, transform 0.35s ease;
+      }
+      .sign-up-panel {
+        display: none;
+      }
+      .auth-container.right-panel-active .sign-in-panel {
+        display: none;
+      }
+      .auth-container.right-panel-active .sign-up-panel {
+        display: flex;
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .mobile-banner {
+        display: block !important;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#454c52] flex items-center justify-center p-3 sm:p-6 lg:p-10 select-none">
+
+  <!-- ==================== MAIN SLIDING AUTH CONTAINER ==================== -->
+  <div id="auth-container" class="auth-container">
+
+    <!-- Mobile Top Banner (Hidden on Desktop) -->
+    <div class="mobile-banner hidden w-full bg-gradient-to-r from-[#0c4c2d] to-[#1e925b] text-white p-6 text-center">
+      <h2 id="mobile-banner-title" class="text-2xl font-bold">Welcome Back!</h2>
+      <p id="mobile-banner-subtitle" class="text-emerald-100 text-xs mt-1">To stay connected with us please login with your personal info</p>
+      <button type="button" id="mobile-toggle-btn" class="mt-3 px-6 py-1.5 rounded-full border border-white text-xs font-semibold tracking-wider hover:bg-white hover:text-[#116d42] transition-colors">
+        SWITCH TO SIGN UP
+      </button>
+    </div>
+
+    <!-- ==================== 1. SIGN IN FORM PANEL ==================== -->
+    <div class="form-panel sign-in-panel">
+      <div class="top-right-curve"></div>
+
+      <div class="w-full max-w-[340px] relative z-10 flex flex-col justify-center items-center">
+        <!-- Heading -->
+        <div class="text-center mb-4 w-full">
+          <h2 class="text-2xl sm:text-3xl font-bold text-[#147346] tracking-tight mb-1 lowercase">
+            welcome
+          </h2>
+          <p class="text-slate-500 text-xs sm:text-[13px] font-normal">
+            Login in to your account to continue
+          </p>
+        </div>
+
+        <!-- Form -->
+        <form id="signin-form" class="space-y-3 w-full" novalidate>
+          <!-- Email -->
+          <div>
+            <input
+              type="email"
+              id="signin-email"
+              autocomplete="email"
+              placeholder="Email................"
+              required
+              class="pill-input w-full px-6 py-2.5 sm:py-3 rounded-full text-sm font-medium"
+            />
+            <p id="signin-email-err" class="hidden text-xs text-rose-500 mt-1 pl-4 font-medium"></p>
+          </div>
+
+          <!-- Password -->
+          <div>
+            <div class="relative">
+              <input
+                type="password"
+                id="signin-password"
+                autocomplete="current-password"
+                placeholder="Password................"
+                required
+                class="pill-input w-full px-6 py-2.5 sm:py-3 pr-12 rounded-full text-sm font-medium"
+              />
+              <button
+                type="button"
+                data-target="signin-password"
+                class="toggle-pw-btn absolute right-4 top-1/2 -translate-y-1/2 text-[#1b6b47]/60 hover:text-[#1b6b47] transition-colors focus:outline-none cursor-pointer"
+                aria-label="Toggle password visibility"
+              >
+                <svg class="eye-open w-5 h-5 block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <svg class="eye-closed w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                </svg>
+              </button>
+            </div>
+            <p id="signin-pass-err" class="hidden text-xs text-rose-500 mt-1 pl-4 font-medium"></p>
+          </div>
+
+          <!-- Forgot Password -->
+          <div class="text-center pt-0.5">
+            <a href="javascript:void(0)" id="forgot-link" class="text-xs text-slate-500 hover:text-[#147346] font-medium transition-colors">
+              Forgot your password?
+            </a>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-1.5">
+            <button
+              type="submit"
+              id="signin-btn"
+              class="w-36 mx-auto block py-2 px-6 rounded-full bg-[#16834f] hover:bg-[#127043] active:bg-[#0e5c36] text-white text-sm font-semibold tracking-wide uppercase transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
+            >
+              LOG IN
+            </button>
+          </div>
+
+          <div id="signin-status" class="hidden text-center text-xs p-2 rounded-xl font-medium mt-1"></div>
+
+          <!-- Switch to Sign Up Trigger -->
+          <div class="text-center text-xs text-slate-500 pt-2">
+            Don't have an account?
+            <a href="javascript:void(0)" id="trigger-signup" class="text-[#178551] font-semibold hover:underline ml-1">
+              sign up
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== 2. SIGN UP FORM PANEL ==================== -->
+    <div class="form-panel sign-up-panel">
+      <div class="top-right-curve"></div>
+
+      <div class="w-full max-w-[340px] relative z-10 flex flex-col justify-center items-center">
+        <!-- Heading -->
+        <div class="text-center mb-3 w-full">
+          <h2 class="text-2xl sm:text-3xl font-bold text-[#147346] tracking-tight mb-1 lowercase">
+            create account
+          </h2>
+          <p class="text-slate-500 text-xs sm:text-[13px] font-normal">
+            Sign up with your personal details
+          </p>
+        </div>
+
+        <!-- Form -->
+        <form id="signup-form" class="space-y-2.5 w-full" novalidate>
+          <!-- Name -->
+          <div>
+            <input
+              type="text"
+              id="signup-name"
+              autocomplete="name"
+              placeholder="Full Name................"
+              required
+              class="pill-input w-full px-6 py-2.5 sm:py-2.5 rounded-full text-sm font-medium"
+            />
+            <p id="signup-name-err" class="hidden text-xs text-rose-500 mt-1 pl-4 font-medium"></p>
+          </div>
+
+          <!-- Email -->
+          <div>
+            <input
+              type="email"
+              id="signup-email"
+              autocomplete="email"
+              placeholder="Email................"
+              required
+              class="pill-input w-full px-6 py-2.5 sm:py-2.5 rounded-full text-sm font-medium"
+            />
+            <p id="signup-email-err" class="hidden text-xs text-rose-500 mt-1 pl-4 font-medium"></p>
+          </div>
+
+          <!-- Password -->
+          <div>
+            <div class="relative">
+              <input
+                type="password"
+                id="signup-password"
+                autocomplete="new-password"
+                placeholder="Password................"
+                required
+                class="pill-input w-full px-6 py-2.5 sm:py-2.5 pr-12 rounded-full text-sm font-medium"
+              />
+              <button
+                type="button"
+                data-target="signup-password"
+                class="toggle-pw-btn absolute right-4 top-1/2 -translate-y-1/2 text-[#1b6b47]/60 hover:text-[#1b6b47] transition-colors focus:outline-none cursor-pointer"
+                aria-label="Toggle password visibility"
+              >
+                <svg class="eye-open w-5 h-5 block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <svg class="eye-closed w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+                </svg>
+              </button>
+            </div>
+            <p id="signup-pass-err" class="hidden text-xs text-rose-500 mt-1 pl-4 font-medium"></p>
+          </div>
+
+          <!-- Submit Button -->
+          <div class="pt-1.5">
+            <button
+              type="submit"
+              id="signup-btn"
+              class="w-36 mx-auto block py-2 px-6 rounded-full bg-[#16834f] hover:bg-[#127043] active:bg-[#0e5c36] text-white text-sm font-semibold tracking-wide uppercase transition-all duration-200 shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
+            >
+              SIGN UP
+            </button>
+          </div>
+
+          <div id="signup-status" class="hidden text-center text-xs p-2 rounded-xl font-medium mt-1"></div>
+
+          <!-- Switch to Sign In Trigger -->
+          <div class="text-center text-xs text-slate-500 pt-2">
+            Already have an account?
+            <a href="javascript:void(0)" id="trigger-signin" class="text-[#178551] font-semibold hover:underline ml-1">
+              sign in
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ==================== 3. SLIDING OVERLAY (GREEN PANEL) ==================== -->
+    <div class="overlay-container">
+      <div class="overlay">
+
+        <!-- Overlay Left: Visible when in Sign Up Mode (prompts to Sign In) -->
+        <div class="overlay-panel overlay-left">
+          <div class="flex flex-col items-center justify-center max-w-[270px]">
+            <h1 class="text-2xl sm:text-3xl lg:text-[32px] font-semibold tracking-tight text-white mb-2 leading-tight">
+              Welcome Back!
+            </h1>
+            <p class="text-emerald-100/85 text-xs sm:text-[13px] font-light mx-auto leading-relaxed">
+              To stay connected with us please login with your personal info
+            </p>
+            <button
+              type="button"
+              id="overlay-signin-btn"
+              class="mt-5 inline-block px-8 py-2 rounded-full border-2 border-white/80 hover:border-white text-white text-xs sm:text-sm font-semibold tracking-wider hover:bg-white hover:text-[#127044] transition-all duration-300 active:scale-95 shadow-sm cursor-pointer"
+            >
+              SIGN IN
+            </button>
+          </div>
+        </div>
+
+        <!-- Overlay Right: Visible when in Sign In Mode (prompts to Sign Up) -->
+        <div class="overlay-panel overlay-right">
+          <div class="flex flex-col items-center justify-center max-w-[270px]">
+            <h1 class="text-2xl sm:text-3xl lg:text-[32px] font-semibold tracking-tight text-white mb-2 leading-tight">
+              Hello, Friend!
+            </h1>
+            <p class="text-emerald-100/85 text-xs sm:text-[13px] font-light mx-auto leading-relaxed">
+              Enter your personal details and start your journey with us today
+            </p>
+            <button
+              type="button"
+              id="overlay-signup-btn"
+              class="mt-5 inline-block px-8 py-2 rounded-full border-2 border-white/80 hover:border-white text-white text-xs sm:text-sm font-semibold tracking-wider hover:bg-white hover:text-[#127044] transition-all duration-300 active:scale-95 shadow-sm cursor-pointer"
+            >
+              SIGN UP
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== LOGGED IN DASHBOARD VIEW ==================== -->
+  <div id="dashboard-container" class="hidden w-full max-w-[650px] bg-white rounded-[2.5rem] shadow-[0_25px_60px_rgba(0,0,0,0.35)] p-8 sm:p-12 text-center relative overflow-hidden transition-all duration-500">
+    <div class="top-right-curve"></div>
+    <div class="w-16 h-16 mx-auto rounded-full bg-emerald-100 text-[#127044] flex items-center justify-center mb-4">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+    <h2 class="text-2xl sm:text-3xl font-bold text-[#147346] mb-2">Welcome to blueflame!</h2>
+    <p class="text-slate-500 text-sm mb-6">You have successfully authenticated your session.</p>
+    
+    <div class="bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4 mb-6 max-w-sm mx-auto text-left text-xs text-emerald-900 space-y-1.5">
+      <div><strong>Authenticated Account:</strong> <span id="dash-user-email">user@example.com</span></div>
+      <div><strong>Status:</strong> <span class="text-emerald-600 font-semibold">Active & Live</span></div>
+    </div>
+
+    <button
+      type="button"
+      id="logout-btn"
+      class="px-8 py-2.5 rounded-full bg-slate-800 hover:bg-slate-900 text-white text-xs sm:text-sm font-semibold tracking-wider transition-all duration-200 active:scale-95 shadow cursor-pointer"
+    >
+      LOG OUT
+    </button>
+  </div>
+
+  <!-- ==================== JAVASCRIPT ==================== -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const container = document.getElementById('auth-container');
+      const dashboard = document.getElementById('dashboard-container');
+      const dashUserEmail = document.getElementById('dash-user-email');
+      const logoutBtn = document.getElementById('logout-btn');
+
+      // Desktop Overlay Buttons
+      const overlaySignUpBtn = document.getElementById('overlay-signup-btn');
+      const overlaySignInBtn = document.getElementById('overlay-signin-btn');
+
+      // Bottom link triggers
+      const triggerSignUp = document.getElementById('trigger-signup');
+      const triggerSignIn = document.getElementById('trigger-signin');
+
+      // Mobile Banner Trigger
+      const mobileToggleBtn = document.getElementById('mobile-toggle-btn');
+      const mobileBannerTitle = document.getElementById('mobile-banner-title');
+      const mobileBannerSubtitle = document.getElementById('mobile-banner-subtitle');
+
+      // Forms
+      const signinForm = document.getElementById('signin-form');
+      const signupForm = document.getElementById('signup-form');
+
+      // Toggle Sliding State
+      function switchToSignUp() {
+        container.classList.add('right-panel-active');
+        if (mobileBannerTitle) {
+          mobileBannerTitle.textContent = 'Hello, Friend!';
+          mobileBannerSubtitle.textContent = 'Enter your personal details to begin';
+          mobileToggleBtn.textContent = 'SWITCH TO SIGN IN';
+        }
+      }
+
+      function switchToSignIn() {
+        container.classList.remove('right-panel-active');
+        if (mobileBannerTitle) {
+          mobileBannerTitle.textContent = 'Welcome Back!';
+          mobileBannerSubtitle.textContent = 'To stay connected with us please login with your personal info';
+          mobileToggleBtn.textContent = 'SWITCH TO SIGN UP';
+        }
+      }
+
+      overlaySignUpBtn.addEventListener('click', switchToSignUp);
+      triggerSignUp.addEventListener('click', switchToSignUp);
+
+      overlaySignInBtn.addEventListener('click', switchToSignIn);
+      triggerSignIn.addEventListener('click', switchToSignIn);
+
+      if (mobileToggleBtn) {
+        mobileToggleBtn.addEventListener('click', () => {
+          if (container.classList.contains('right-panel-active')) {
+            switchToSignIn();
+          } else {
+            switchToSignUp();
+          }
+        });
+      }
+
+      // Password Visibility Toggle for all inputs
+      document.querySelectorAll('.toggle-pw-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const targetId = btn.getAttribute('data-target');
+          const input = document.getElementById(targetId);
+          if (!input) return;
+
+          const eyeOpen = btn.querySelector('.eye-open');
+          const eyeClosed = btn.querySelector('.eye-closed');
+
+          const isPassword = input.type === 'password';
+          input.type = isPassword ? 'text' : 'password';
+
+          if (isPassword) {
+            eyeOpen.classList.add('hidden');
+            eyeClosed.classList.remove('hidden');
+          } else {
+            eyeOpen.classList.remove('hidden');
+            eyeClosed.classList.add('hidden');
+          }
+          input.focus();
+        });
+      });
+
+      // Clear Errors on Input
+      document.querySelectorAll('input').forEach((inp) => {
+        inp.addEventListener('input', () => {
+          const err = document.getElementById(`${inp.id}-err`);
+          if (err) err.classList.add('hidden');
+        });
+      });
+
+      // Sign In Submit
+      signinForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const emailInput = document.getElementById('signin-email');
+        const passInput = document.getElementById('signin-password');
+        const emailErr = document.getElementById('signin-email-err');
+        const passErr = document.getElementById('signin-pass-err');
+        const submitBtn = document.getElementById('signin-btn');
+
+        let valid = true;
+        if (!emailInput.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim())) {
+          emailErr.textContent = 'Please enter a valid email address.';
+          emailErr.classList.remove('hidden');
+          valid = false;
+        }
+
+        if (!passInput.value || passInput.value.length < 6) {
+          passErr.textContent = 'Password must be at least 6 characters.';
+          passErr.classList.remove('hidden');
+          valid = false;
+        }
+
+        if (!valid) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '...';
+
+        setTimeout(() => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'LOG IN';
+          dashUserEmail.textContent = emailInput.value.trim();
+
+          // Transition to Dashboard
+          container.classList.add('hidden');
+          dashboard.classList.remove('hidden');
+        }, 500);
+      });
+
+      // Sign Up Submit
+      signupForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nameInput = document.getElementById('signup-name');
+        const emailInput = document.getElementById('signup-email');
+        const passInput = document.getElementById('signup-password');
+        const nameErr = document.getElementById('signup-name-err');
+        const emailErr = document.getElementById('signup-email-err');
+        const passErr = document.getElementById('signup-pass-err');
+        const submitBtn = document.getElementById('signup-btn');
+
+        let valid = true;
+        if (!nameInput.value.trim()) {
+          nameErr.textContent = 'Please enter your full name.';
+          nameErr.classList.remove('hidden');
+          valid = false;
+        }
+
+        if (!emailInput.value.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.value.trim())) {
+          emailErr.textContent = 'Please enter a valid email address.';
+          emailErr.classList.remove('hidden');
+          valid = false;
+        }
+
+        if (!passInput.value || passInput.value.length < 6) {
+          passErr.textContent = 'Password must be at least 6 characters.';
+          passErr.classList.remove('hidden');
+          valid = false;
+        }
+
+        if (!valid) return;
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = '...';
+
+        setTimeout(() => {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'SIGN UP';
+          dashUserEmail.textContent = emailInput.value.trim();
+
+          container.classList.add('hidden');
+          dashboard.classList.remove('hidden');
+        }, 500);
+      });
+
+      // Logout handler
+      logoutBtn.addEventListener('click', () => {
+        dashboard.classList.add('hidden');
+        container.classList.remove('hidden');
+        switchToSignIn();
+      });
+
+      // Forgot password trigger
+      document.getElementById('forgot-link').addEventListener('click', () => {
+        const emailInput = document.getElementById('signin-email');
+        const statusBox = document.getElementById('signin-status');
+        if (!emailInput.value.trim()) {
+          document.getElementById('signin-email-err').textContent = 'Enter your email first to receive reset link.';
+          document.getElementById('signin-email-err').classList.remove('hidden');
+          emailInput.focus();
+          return;
+        }
+        statusBox.textContent = `Password reset link dispatched to ${emailInput.value.trim()}`;
+        statusBox.className = 'text-center text-xs p-2.5 rounded-xl font-medium mt-2 bg-emerald-100 text-emerald-800';
+        statusBox.classList.remove('hidden');
+      });
+    });
+  </script>
+</body>
+</html>
