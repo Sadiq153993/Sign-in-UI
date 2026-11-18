@@ -34,6 +34,12 @@
   <style>
     body {
       font-family: 'Poppins', sans-serif;
+      background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
+                  url('https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=2070&q=80');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
     }
 
     /* Mint Pill Input */
@@ -234,23 +240,66 @@
     }
 
     /* ==========================================================================
-       MOBILE RESPONSIVENESS (Screens < 768px)
-       Gracefully adapts to modern tabbed sliding panel
+       TABLET RESPONSIVENESS (Screens between 768px and 1024px)
        ========================================================================== */
+    @media (max-width: 1024px) and (min-width: 768px) {
+      .auth-container {
+        max-width: 92%;
+      }
+      .form-panel {
+        padding: 1.5rem;
+      }
+      .overlay-panel {
+        padding: 1.5rem 1rem;
+      }
+      .overlay-panel h1 {
+        font-size: 1.65rem;
+        line-height: 1.2;
+      }
+      .overlay-panel p {
+        font-size: 0.75rem;
+      }
+    }
+
+    /* ==========================================================================
+       MOBILE / APP VIEW RESPONSIVENESS (Screens < 768px)
+       ========================================================================== */
+    @keyframes mobileFadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     @media (max-width: 767px) {
       .auth-container {
+        max-width: 100%;
+        height: auto;
         min-height: auto;
-        border-radius: 2rem;
+        border-radius: 1.5rem;
       }
       .overlay-container {
-        display: none;
+        display: none !important;
+      }
+      .mobile-banner {
+        display: block !important;
       }
       .form-panel {
         position: relative;
         width: 100%;
+        height: auto;
+        padding: 2rem 1.25rem 2.5rem 1.25rem;
         left: 0 !important;
         transform: none !important;
-        transition: opacity 0.35s ease, transform 0.35s ease;
+        box-sizing: border-box;
+      }
+      .sign-in-panel {
+        display: flex;
+        animation: mobileFadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
       }
       .sign-up-panel {
         display: none;
@@ -262,20 +311,24 @@
         display: flex;
         opacity: 1;
         pointer-events: auto;
+        animation: mobileFadeIn 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
       }
-      .mobile-banner {
-        display: block !important;
+      .top-right-curve {
+        display: none !important;
       }
     }
   </style>
 </head>
-<body class="min-h-screen bg-[#454c52] flex items-center justify-center p-3 sm:p-6 lg:p-10 select-none">
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-6 lg:p-10 select-none">
 
   <!-- ==================== MAIN SLIDING AUTH CONTAINER ==================== -->
   <div id="auth-container" class="auth-container">
 
     <!-- Mobile Top Banner (Hidden on Desktop) -->
     <div class="mobile-banner hidden w-full bg-gradient-to-r from-[#0c4c2d] to-[#1e925b] text-white p-6 text-center">
+      <div class="flex justify-center mb-2.5">
+        <img src="blueflame-logo.png" alt="blueflame logo" class="w-20 h-auto drop-shadow-md select-none" />
+      </div>
       <h2 id="mobile-banner-title" class="text-2xl font-bold">Welcome Back!</h2>
       <p id="mobile-banner-subtitle" class="text-emerald-100 text-xs mt-1">To stay connected with us please login with your personal info</p>
       <button type="button" id="mobile-toggle-btn" class="mt-3 px-6 py-1.5 rounded-full border border-white text-xs font-semibold tracking-wider hover:bg-white hover:text-[#116d42] transition-colors">
@@ -476,7 +529,12 @@
         <!-- Overlay Left: Visible when in Sign Up Mode (prompts to Sign In) -->
         <div class="overlay-panel overlay-left">
           <div class="flex flex-col items-center justify-center max-w-[270px]">
-            <h1 class="text-2xl sm:text-3xl lg:text-[32px] font-semibold tracking-tight text-white mb-2 leading-tight">
+            <!-- Brand Logo -->
+            <div class="flex flex-col items-center mb-3 transition-transform hover:scale-105 duration-300">
+              <img src="blueflame-logo.png" alt="blueflame logo" class="w-24 h-auto drop-shadow-md select-none" />
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl lg:text-[30px] font-semibold tracking-tight text-white mb-2 leading-tight">
               Welcome Back!
             </h1>
             <p class="text-emerald-100/85 text-xs sm:text-[13px] font-light mx-auto leading-relaxed">
@@ -495,7 +553,12 @@
         <!-- Overlay Right: Visible when in Sign In Mode (prompts to Sign Up) -->
         <div class="overlay-panel overlay-right">
           <div class="flex flex-col items-center justify-center max-w-[270px]">
-            <h1 class="text-2xl sm:text-3xl lg:text-[32px] font-semibold tracking-tight text-white mb-2 leading-tight">
+            <!-- Brand Logo -->
+            <div class="flex flex-col items-center mb-3 transition-transform hover:scale-105 duration-300">
+              <img src="blueflame-logo.png" alt="blueflame logo" class="w-24 h-auto drop-shadow-md select-none" />
+            </div>
+
+            <h1 class="text-2xl sm:text-3xl lg:text-[30px] font-semibold tracking-tight text-white mb-2 leading-tight">
               Hello, Friend!
             </h1>
             <p class="text-emerald-100/85 text-xs sm:text-[13px] font-light mx-auto leading-relaxed">
